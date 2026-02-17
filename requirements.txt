@@ -7,3 +7,7 @@ textblob
 wordcloud
 matplotlib
 scikit-learn
+sqlalchemy
+psycopg2-binary
+pymysql
+requests

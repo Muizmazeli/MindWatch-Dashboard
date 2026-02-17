@@ -20,37 +20,12 @@ st.set_page_config(page_title="MindWatch AI Dashboard", layout="wide")
 # -------------------------------------------------
 st.markdown("""
 <style>
-
-/* Main App Background */
-.stApp {
-    background-color: #0f172a;
-    color: #ffffff;
-}
-
-/* Main Content Area */
-.main {
-    background-color: #0f172a;
-}
-
-/* Sidebar */
-section[data-testid="stSidebar"] {
-    background-color: #1e293b;
-}
-
-/* Text Colors */
-h1, h2, h3, h4, h5, h6, p, span, div, label {
-    color: #ffffff !important;
-}
-
-/* Metric text fix */
-[data-testid="stMetricValue"] {
-    color: #ffffff !important;
-}
-
-[data-testid="stMetricLabel"] {
-    color: #94a3b8 !important;
-}
-
+.stApp {background-color: #0f172a; color: #ffffff;}
+.main {background-color: #0f172a;}
+section[data-testid="stSidebar"] {background-color: #1e293b;}
+h1, h2, h3, h4, h5, h6, p, span, div, label {color: #ffffff !important;}
+[data-testid="stMetricValue"] {color: #ffffff !important;}
+[data-testid="stMetricLabel"] {color: #94a3b8 !important;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -69,10 +44,10 @@ df = load_data()
 # LOAD MODEL
 # -------------------------------------------------
 artifacts = joblib.load("mental_health_model_artifacts.pkl")
-model = artifacts["model"]
-scaler = artifacts["scaler"]
-label_encoder = artifacts["label_encoder"]
-feature_columns = artifacts["feature_columns"]
+model = artifacts.get("model")
+scaler = artifacts.get("scaler")
+label_encoder = artifacts.get("label_encoder")
+feature_columns = artifacts.get("feature_columns")
 
 # -------------------------------------------------
 # TITLE
@@ -106,7 +81,6 @@ filtered = df[
 # KPI SECTION
 # -------------------------------------------------
 col1, col2, col3 = st.columns(3)
-
 col1.metric("Total Posts", len(filtered))
 col2.metric("Negative %",
             f"{(filtered['sentiment']=='Negative').mean()*100:.1f}%")
@@ -130,8 +104,7 @@ fig = px.bar(
     x='sentiment',
     y='count',
     color='sentiment',
-    title='Sentiment Distribution',
-    labels={'sentiment': 'Sentiment', 'count': 'Count'}
+    title='Sentiment Distribution'
 )
 
 st.plotly_chart(fig, use_container_width=True)
@@ -173,7 +146,7 @@ st.dataframe(high_risk, use_container_width=True)
 st.divider()
 
 # =================================================
-# ADVANCED EMOTIONAL ANALYZER SECTION
+# EMOTIONAL ANALYZER
 # =================================================
 st.header("💬 Real-Time Emotional Intelligence Analyzer")
 
@@ -207,28 +180,23 @@ if st.button("Analyze Emotion"):
         blob = TextBlob(user_text)
         polarity = blob.sentiment.polarity
 
-        # Display Gauge
         st.plotly_chart(sentiment_gauge(polarity), use_container_width=True)
 
-        # Risk Score Calculation
         risk_score = abs(polarity)
         st.metric("Emotional Risk Score", f"{risk_score:.2f}")
 
-        # Sentiment Classification
         if polarity > 0.2:
-            sentiment_label = "Positive 😊"
-            st.success(f"Sentiment Detected: {sentiment_label}")
+            st.success("Sentiment Detected: Positive 😊")
             response = "That’s wonderful to hear. Keep nurturing that positive energy."
 
         elif polarity < -0.2:
-            sentiment_label = "Negative 😔"
-            st.error(f"Sentiment Detected: {sentiment_label}")
+            st.error("Sentiment Detected: Negative 😔")
 
             advice_list = [
                 "🌱 Tough days don’t last, tough people do.",
                 "💙 It's okay to not be okay.",
                 "🌤 Small progress is still progress.",
-                "🫂 You are not alone. Consider reaching out to someone you trust.",
+                "🫂 You are not alone.",
                 "🌟 Every storm runs out of rain."
             ]
 
@@ -238,18 +206,15 @@ if st.button("Analyze Emotion"):
                 st.error("⚠️ High emotional distress detected. Consider speaking to a professional.")
 
         else:
-            sentiment_label = "Neutral 😐"
-            st.warning(f"Sentiment Detected: {sentiment_label}")
+            st.warning("Sentiment Detected: Neutral 😐")
             response = "Thank you for sharing. Remember to check in with yourself regularly."
 
-        # Chat Style Response
         with st.chat_message("user"):
             st.write(user_text)
 
         with st.chat_message("assistant"):
             st.write(response)
 
-        # Word Cloud
         st.subheader("📊 Emotional Word Cloud")
         wordcloud = WordCloud(background_color='white').generate(user_text)
         fig_wc, ax = plt.subplots()
@@ -272,3 +237,134 @@ if st.button("Start Breathing Exercise"):
         time.sleep(2)
 
 st.success("You completed the breathing session. Well done.")
+
+# =================================================
+# MODEL EVALUATION
+# =================================================
+st.divider()
+st.header("📊 Model Evaluation & Performance Analysis")
+
+try:
+    y_test = artifacts["y_test"]
+    y_pred = artifacts["y_pred"]
+
+    from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred, average="weighted")
+    recall = recall_score(y_test, y_pred, average="weighted")
+    f1 = f1_score(y_test, y_pred, average="weighted")
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Accuracy", f"{accuracy:.2f}")
+    c2.metric("Precision", f"{precision:.2f}")
+    c3.metric("Recall", f"{recall:.2f}")
+    c4.metric("F1 Score", f"{f1:.2f}")
+
+    st.subheader("Confusion Matrix")
+    cm = confusion_matrix(y_test, y_pred)
+
+    fig_cm, ax = plt.subplots()
+    ax.imshow(cm)
+
+    for i in range(len(cm)):
+        for j in range(len(cm)):
+            ax.text(j, i, cm[i, j], ha="center", va="center")
+
+    ax.set_xlabel("Predicted")
+    ax.set_ylabel("Actual")
+
+    st.pyplot(fig_cm)
+
+except:
+    st.info("Evaluation metrics not found in artifacts.")
+
+# =================================================
+# BUSINESS INTERPRETATION
+# =================================================
+st.divider()
+st.header("🧠 Business Interpretation of Results")
+
+st.markdown("""
+• High negative sentiment indicates rising distress trends.
+
+• Anxiety scores above 0.8 highlight urgent intervention cases.
+
+• Platform insights help identify risk concentration areas.
+
+• Enables proactive mental health support deployment.
+""")
+
+# =================================================
+# DATASET DOWNLOAD
+# =================================================
+st.divider()
+st.header("📂 Cleaned Dataset Access")
+
+st.download_button(
+    "Download Cleaned Dataset",
+    df.to_csv(index=False),
+    "mental_health_cleaned_dataset.csv",
+    "text/csv"
+)
+
+# =================================================
+# ADDITIONAL INSIGHTS
+# =================================================
+st.subheader("📱 Platform Anxiety Risk Comparison")
+
+platform_risk = (
+    df.groupby("platform")["anxiety_score"]
+    .mean()
+    .reset_index()
+)
+
+fig_platform = px.bar(
+    platform_risk,
+    x="platform",
+    y="anxiety_score",
+    color="platform"
+)
+
+st.plotly_chart(fig_platform, use_container_width=True)
+
+# =================================================
+# DEPLOYMENT DISCUSSION
+# =================================================
+st.divider()
+st.header("🚀 Real-World Deployment Strategy")
+
+st.markdown("""
+• Live mental health monitoring dashboards
+• Batch prediction pipelines
+• HR & university wellbeing systems
+• Healthcare screening support
+• API integration for external apps
+""")
+
+# =================================================
+# ETHICAL AI
+# =================================================
+st.divider()
+st.header("⚖ Ethical AI Considerations")
+
+st.markdown("""
+• Protect user privacy
+• Ensure data anonymity
+• Avoid clinical misdiagnosis
+• Monitor bias & fairness
+""")
+
+# =================================================
+# FUTURE WORK
+# =================================================
+st.divider()
+st.header("🔮 Future Enhancements")
+
+st.markdown("""
+• Deep learning sentiment models
+• Multilingual emotion detection
+• Voice emotion recognition
+• Mobile app integration
+• Therapist alert systems
+""")
