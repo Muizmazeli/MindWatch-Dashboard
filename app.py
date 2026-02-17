@@ -25,6 +25,7 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import random
 import time
+import os  
 
 # -------------------------------------------------
 # PAGE CONFIG
