@@ -1,3 +1,19 @@
+# Add at the very top of app.py
+import sys
+import streamlit as st
+
+# Check if running on Streamlit Cloud
+if 'RUNTIME_ENV' in st.secrets or 'STREAMLIT_RUNTIME' in os.environ:
+    st.success("✅ Running on Streamlit Cloud")
+    
+# Display access URL
+st.sidebar.info(f"""
+**App URL:**  
+https://mindwatch-dashboard.streamlit.app
+
+**Status:** ✅ Running
+""")
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -43,11 +59,20 @@ df = load_data()
 # -------------------------------------------------
 # LOAD MODEL
 # -------------------------------------------------
-artifacts = joblib.load("mental_health_model_artifacts.pkl")
-model = artifacts.get("model")
-scaler = artifacts.get("scaler")
-label_encoder = artifacts.get("label_encoder")
-feature_columns = artifacts.get("feature_columns")
+# Add this after loading artifacts
+try:
+    artifacts = joblib.load("mental_health_model_artifacts.pkl")
+    model = artifacts.get("model")
+    scaler = artifacts.get("scaler")
+    label_encoder = artifacts.get("label_encoder")
+    feature_columns = artifacts.get("feature_columns")
+    
+    # Suppress sklearn version warnings
+    import warnings
+    warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
+except Exception as e:
+    st.warning(f"Model loading issue: {e}. Some features may be limited.")
+    model = None
 
 # -------------------------------------------------
 # TITLE
@@ -107,7 +132,7 @@ fig = px.bar(
     title='Sentiment Distribution'
 )
 
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, use_container_width='stretch')  # or use width='stretch'
 
 # -------------------------------------------------
 # MONTHLY TREND
